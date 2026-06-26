@@ -67,6 +67,7 @@ def get_llm(provider: str = None, temperature: float = 0.0):
             model=config.OLLAMA_MODEL,
             base_url=config.OLLAMA_BASE_URL,
             temperature=temperature,
+            num_gpu=config.OLLAMA_NUM_GPU,
         )
 
     elif provider == "openrouter":
@@ -117,13 +118,30 @@ def get_embeddings(provider: str = None):
 
     elif provider == "gemini":
         from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        model = config.GEMINI_EMBEDDING_MODEL
+        if model == "models/embedding-001":
+            model = "models/gemini-embedding-001"
+        elif model == "models/text-embedding-004":
+            model = "models/gemini-embedding-2"
         return GoogleGenerativeAIEmbeddings(
-            model=config.GEMINI_EMBEDDING_MODEL,
+            model=model,
             google_api_key=config.GOOGLE_API_KEY,
         )
 
     elif provider == "anthropic":
-        # Anthropic không cung cấp Embeddings API → dùng OpenAI thay thế
+        if config.GOOGLE_API_KEY:
+            print("⚠️  Anthropic không có Embeddings API — đang dùng Gemini embeddings thay thế.")
+            from langchain_google_genai import GoogleGenerativeAIEmbeddings
+            model = config.GEMINI_EMBEDDING_MODEL
+            if model == "models/embedding-001":
+                model = "models/gemini-embedding-001"
+            elif model == "models/text-embedding-004":
+                model = "models/gemini-embedding-2"
+            return GoogleGenerativeAIEmbeddings(
+                model=model,
+                google_api_key=config.GOOGLE_API_KEY,
+            )
+
         print("⚠️  Anthropic không có Embeddings API — đang dùng OpenAI embeddings thay thế.")
         from langchain_openai import OpenAIEmbeddings
         return OpenAIEmbeddings(
@@ -136,6 +154,7 @@ def get_embeddings(provider: str = None):
         return OllamaEmbeddings(
             model=config.OLLAMA_EMBEDDING_MODEL,
             base_url=config.OLLAMA_BASE_URL,
+            num_gpu=config.OLLAMA_NUM_GPU,
         )
 
     else:
